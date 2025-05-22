@@ -10,16 +10,14 @@ const extractTags = (content) => {
   const allParts = new Set();
   rawTags.forEach((tag) => {
     const parts = tag.slice(1).split("/");
-    parts.forEach((_, i) => {
-      allParts.add(parts[i]);
-    });
+    parts.forEach((t) => allParts.add(t));
   });
   return Array.from(allParts);
 };
 
-// 用按钮替换标签字符串
-const renderContentWithTags = (content, onTagClick) => {
-  return content.split(/(#[\w\/]+)/g).map((part, i) => {
+// 渲染标签和图片
+const renderContent = (content, onTagClick) => {
+  return content.split(/(#[\w\/]+|!\[[^\]]*\]\([^\)]+\))/g).map((part, i) => {
     if (/^#\w+(?:\/\w+)*$/.test(part)) {
       return (
         <button
@@ -34,8 +32,41 @@ const renderContentWithTags = (content, onTagClick) => {
         </button>
       );
     }
+    const imgMatch = part.match(/^!\[[^\]]*\]\(([^\)]+)\)/);
+    if (imgMatch) {
+      return <img key={i} src={imgMatch[1]} alt="" className="my-2 max-w-full" />;
+    }
     return <span key={i}>{part}</span>;
   });
+};
+
+// 解析 yyyy-MM-dd.md 文件格式中的 - HH:mm 开头分段
+const parseMdNotes = (filename, rawContent, lastModified) => {
+  const lines = rawContent.split("\n");
+  const result = [];
+  let currentNote = null;
+
+  lines.forEach((line) => {
+    const timeMatch = line.match(/^\s*-\s*(\d{2}):(\d{2})/);
+    if (timeMatch) {
+      if (currentNote) result.push(currentNote);
+
+      const [_, hour, minute] = timeMatch;
+      const datePart = filename.replace(/\.md$/, "");
+      const fullDate = new Date(`${datePart}T${hour}:${minute}`);
+
+      currentNote = {
+        filename,
+        content: '',
+        createdAt: fullDate,
+      };
+    } else if (currentNote) {
+      currentNote.content += line + "\n";
+    }
+  });
+
+  if (currentNote) result.push(currentNote);
+  return result;
 };
 
 export default function App() {
@@ -72,11 +103,8 @@ export default function App() {
         if (entry.kind === "file" && entry.name.endsWith(".md")) {
           const file = await entry.getFile();
           const text = await file.text();
-          newNotes.push({
-            filename: entry.name,
-            content: text,
-            createdAt: file.lastModified ? new Date(file.lastModified) : new Date(),
-          });
+          const parsed = parseMdNotes(entry.name, text, file.lastModified);
+          newNotes.push(...parsed);
         }
       }
       setNotes(newNotes);
@@ -115,7 +143,7 @@ export default function App() {
       )}
 
       {filteredNotes.map((note, index) => (
-        <Card key={note.filename} className="mt-4">
+        <Card key={note.filename + index + note.createdAt} className="mt-4">
           <CardContent className="p-4 space-y-2">
             <div className="text-sm text-gray-500">
               {format(note.createdAt, "yyyy-MM-dd HH:mm")}
@@ -134,7 +162,7 @@ export default function App() {
             ) : (
               <>
                 <div className="whitespace-pre-wrap font-sans">
-                  {renderContentWithTags(note.content, (tag) => setActiveTag(tag))}
+                  {renderContent(note.content, (tag) => setActiveTag(tag))}
                 </div>
                 <Button variant="link" onClick={() => {
                   setEditingIndex(index);
