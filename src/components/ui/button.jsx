@@ -1,4 +1,3 @@
-
 export function Button({ children, onClick, variant = "default", ...props }) {
   const base = "px-4 py-2 rounded text-sm font-medium";
   const styles = {
@@ -8,7 +7,7 @@ export function Button({ children, onClick, variant = "default", ...props }) {
     ghost: "text-gray-500 hover:text-black"
   };
   return (
-    <button onClick={onClick} className={\`\${base} \${styles[variant]}\`} {...props}>
+    <button onClick={onClick} className={`${base} ${styles[variant]}`} {...props}>
       {children}
     </button>
   );
