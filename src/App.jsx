@@ -119,15 +119,17 @@ export default function App() {
                 {format(note.createdAt, "yyyy-MM-dd HH:mm")}
               </div>
               {editingIndex === index ? (
-                <>
+                <div className="relative">
                   <Textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     className="w-full"
                   />
-                  <Button onClick={() => handleSaveEdit(index)}>保存</Button>
-                  <Button variant="ghost" onClick={() => setEditingIndex(null)}>取消</Button>
-                </>
+                  <div className="absolute right-2 bottom-2 flex gap-2 z-20">
+                    <Button onClick={() => handleSaveEdit(index)} className="px-5 shadow-md bg-green-500 hover:bg-green-600 text-white">保存</Button>
+                    <Button variant="ghost" onClick={() => setEditingIndex(null)} className="px-5">取消</Button>
+                  </div>
+                </div>
               ) : (
                 <div className="whitespace-pre-wrap font-sans">
                   <MarkdownContent content={cleanContent} onTagClick={setActiveTag} tagClassName="align-middle" />

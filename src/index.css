@@ -1,4 +1,11 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  background: #F2F2F2;
+}
+
+textarea span{
+    line-height: 1.8;
+}

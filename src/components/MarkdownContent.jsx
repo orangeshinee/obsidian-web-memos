@@ -88,10 +88,11 @@ export function parseMdNotes(filename, rawContent, lastModified) {
         createdAt: fullDate,
       };
     } else if (currentNote) {
-      currentNote.content += line + "\n";
+      currentNote.content += line.replace(/^\s+/, '') + "\n";
     }
-  });
+  })
+
 
   if (currentNote) result.push(currentNote);
   return result;
-} 
+}
