@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,30 +7,63 @@ import MarkdownContent, { extractTags, parseMdNotes } from "@/components/Markdow
 
 function NoteActions({ onEdit, onDelete }) {
   const [open, setOpen] = useState(false);
+  const leaveTimerRef = useRef(null); // 用于存储 setTimeout 的 ID
+
+  const handleMouseEnter = () => {
+    // 如果之前有计划中的隐藏操作，取消它
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
+    setOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    // 设置一个延迟来隐藏菜单
+    // 这样即使用户鼠标短暂离开（比如移动到菜单项时经过1px的间隙），菜单也不会立即消失
+    leaveTimerRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 300); // 300毫秒的延迟，你可以调整这个值
+  };
+
   return (
     <div className="absolute top-2 right-2 z-10">
-      <div 
+      <div
         className="relative group"
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        onMouseEnter={handleMouseEnter} // 使用新的处理函数
+        onMouseLeave={handleMouseLeave} // 使用新的处理函数
       >
+        {/* 触发按钮 */}
         <button
           className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500"
           aria-label="操作菜单"
         >
+          {/* SVG Icon */}
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
             <circle cx="12" cy="12" r="1" />
             <circle cx="19" cy="12" r="1" />
             <circle cx="5" cy="12" r="1" />
           </svg>
         </button>
+
+        {/* 菜单内容 (确保它在 onMouseEnter/onMouseLeave 的 div 内部) */}
+        {open && (
+          <div className="absolute right-0 mt-2 w-28 bg-white rounded shadow-lg border border-gray-100 py-1 text-sm z-20">
+            <button
+              className="block w-full text-left px-4 py-2 hover:bg-gray-50"
+              onClick={() => { setOpen(false); onEdit(); }}
+            >
+              编辑
+            </button>
+            <button
+              className="block w-full text-left px-4 py-2 text-red-500 hover:bg-red-50"
+              onClick={() => { setOpen(false); onDelete(); }}
+            >
+              删除
+            </button>
+          </div>
+        )}
       </div>
-      {open && (
-        <div className="absolute right-0 mt-2 w-28 bg-white rounded shadow-lg border border-gray-100 py-1 text-sm">
-          <button className="block w-full text-left px-4 py-2 hover:bg-gray-50" onClick={() => { setOpen(false); onEdit(); }}>编辑</button>
-          <button className="block w-full text-left px-4 py-2 text-red-500 hover:bg-red-50" onClick={() => { setOpen(false); onDelete(); }}>删除</button>
-        </div>
-      )}
     </div>
   );
 }
