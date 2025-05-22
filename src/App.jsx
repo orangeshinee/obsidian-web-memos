@@ -9,13 +9,22 @@ function NoteActions({ onEdit, onDelete }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="absolute top-2 right-2 z-10">
-      <button
-        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500"
-        onClick={() => setOpen((v) => !v)}
-        aria-label="操作菜单"
+      <div 
+        className="relative group"
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
       >
-        <span style={{ fontSize: 22, fontWeight: 700 }}>...</span>
-      </button>
+        <button
+          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500"
+          aria-label="操作菜单"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+            <circle cx="12" cy="12" r="1" />
+            <circle cx="19" cy="12" r="1" />
+            <circle cx="5" cy="12" r="1" />
+          </svg>
+        </button>
+      </div>
       {open && (
         <div className="absolute right-0 mt-2 w-28 bg-white rounded shadow-lg border border-gray-100 py-1 text-sm">
           <button className="block w-full text-left px-4 py-2 hover:bg-gray-50" onClick={() => { setOpen(false); onEdit(); }}>编辑</button>
@@ -87,12 +96,26 @@ export default function App() {
         <Button variant="outline" onClick={handleLoadFolder}>读取本地文件夹</Button>
       </div>
 
-      <Textarea
-        value={newNote}
-        onChange={(e) => setNewNote(e.target.value)}
-        placeholder="输入你的 Markdown 笔记..."
-        className="w-full"
-      />
+      <div className="bg-white rounded-xl border border-green-300 shadow-sm p-4 mb-2 relative" style={{ minHeight: 120 }}>
+        <Textarea
+          value={newNote}
+          onChange={(e) => setNewNote(e.target.value)}
+          placeholder="输入你的 Markdown 笔记..."
+          className="w-full border-none outline-none resize-none bg-transparent min-h-[80px] text-base"
+          style={{ boxShadow: 'none', height: 'auto', overflow: 'hidden' }}
+          onInput={(e) => {
+            e.target.style.height = 'auto';
+            e.target.style.height = e.target.scrollHeight + 'px';
+          }}
+        />
+        <Button
+          onClick={handleAddNote}
+          className={`!bg-green-500 hover:!bg-green-600 text-white rounded-lg absolute bottom-3 right-4 px-4 py-1 shadow-md ${!newNote.trim() ? 'opacity-50' : ''}`}
+          style={{ minWidth: 30 }}
+        >
+          <svg width="1.5em" height="1.5em" fill="none" viewBox="0 0 24 24"><path d="M4 20L20 12L4 4V10L16 12L4 14V20Z" fill="currentColor"/></svg>
+        </Button>
+      </div>
 
       {activeTag && (
         <div className="text-sm text-gray-600">
