@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -12,6 +12,9 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
  * @param {string} tagClassName - 标签额外样式类名
  */
 export default function MarkdownContent({ content, onTagClick, tagClassName = "" }) {
+  const [previewImg, setPreviewImg] = useState(null);
+  const [previewIdx, setPreviewIdx] = useState(-1);
+  
   // 提取所有图片链接，以便稍后单独渲染
   const imgRegex = /!\[[^\]]*\]\(([^\)]+)\)/g;
   const images = [];
@@ -32,21 +35,16 @@ export default function MarkdownContent({ content, onTagClick, tagClassName = ""
   const components = {
     // 处理段落，识别并处理标签
     p: ({ node, children, ...props }) => {
-      if (!children) return <p {...props}>{children}</p>;
-      
-      // 直接查找和处理文本节点中的标签
+      // 过滤掉只包含空白的段落
+      const text = React.Children.toArray(children).join("").trim();
+      if (!text) return null;
+      // 标签处理
       const processChildren = (items) => {
         if (!items) return [];
-        
         return React.Children.map(items, child => {
-          // 如果子元素不是字符串，直接返回
           if (typeof child !== 'string') return child;
-          
-          // 处理文本节点中的标签
           const parts = child.split(/(#[\w\u4e00-\u9fa5]+(?:\/[\w\u4e00-\u9fa5]+)*)/);
-          
           if (parts.length === 1) return child;
-          
           return parts.map((part, i) => {
             if (/^#[\w\u4e00-\u9fa5]+(?:\/[\w\u4e00-\u9fa5]+)*$/.test(part)) {
               return (
@@ -64,7 +62,6 @@ export default function MarkdownContent({ content, onTagClick, tagClassName = ""
           });
         });
       };
-      
       return <p {...props}>{processChildren(children)}</p>;
     },
     
@@ -120,16 +117,8 @@ export default function MarkdownContent({ content, onTagClick, tagClassName = ""
       return <li {...props}>{children}</li>;
     },
     
-    // 不在上方单独渲染图片，而是让 ReactMarkdown 直接处理
-    // 这样可以保持原文中图片的位置
-    img: ({ src, alt, ...props }) => (
-      <img 
-        src={src} 
-        alt={alt || ''} 
-        className="my-2 max-w-full rounded" 
-        {...props}
-      />
-    )
+    // 不在正文中渲染图片，直接返回 null
+    img: () => null,
   };
 
   return (
@@ -137,7 +126,7 @@ export default function MarkdownContent({ content, onTagClick, tagClassName = ""
       {/* 使用 ReactMarkdown 渲染内容 */}
       <div className="markdown-body">
         <ReactMarkdown 
-          remarkPlugins={[remarkGfm, remarkBreaks]} 
+          remarkPlugins={[remarkGfm]} 
           components={components}
         >
           {content}
@@ -152,10 +141,26 @@ export default function MarkdownContent({ content, onTagClick, tagClassName = ""
               key={src + idx}
               src={src}
               alt=""
-              className="object-cover rounded shadow max-h-28 max-w-[120px] border border-gray-200"
+              className="object-cover rounded shadow max-h-28 max-w-[120px] border border-gray-200 cursor-pointer"
               style={{ background: '#f8f8fa' }}
+              onClick={() => { setPreviewImg(src); setPreviewIdx(idx); }}
             />
           ))}
+        </div>
+      )}
+      
+      {/* 图片预览弹窗，支持多图切换 */}
+      {previewImg && previewIdx >= 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => { setPreviewImg(null); setPreviewIdx(-1); }}>
+          {/* 左右切换按钮 */}
+          {images.length > 1 && previewIdx > 0 && (
+            <button className="absolute left-8 text-white text-4xl font-bold px-2 py-1 bg-black/30 rounded-full hover:bg-black/60" onClick={e => { e.stopPropagation(); setPreviewImg(images[previewIdx-1]); setPreviewIdx(previewIdx-1); }}>&lt;</button>
+          )}
+          <img src={previewImg} alt="预览" className="max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl border-4 border-white" onClick={e => e.stopPropagation()} />
+          {images.length > 1 && previewIdx < images.length-1 && (
+            <button className="absolute right-8 text-white text-4xl font-bold px-2 py-1 bg-black/30 rounded-full hover:bg-black/60" onClick={e => { e.stopPropagation(); setPreviewImg(images[previewIdx+1]); setPreviewIdx(previewIdx+1); }}>&gt;</button>
+          )}
+          <button className="absolute top-6 right-8 text-white text-3xl font-bold" onClick={() => { setPreviewImg(null); setPreviewIdx(-1); }}>&times;</button>
         </div>
       )}
     </>
