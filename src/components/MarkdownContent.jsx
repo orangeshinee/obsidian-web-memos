@@ -4,16 +4,29 @@ import React from "react";
  * MarkdownContent 组件：渲染带标签和图片的 markdown 内容
  * @param {string} content - markdown 文本内容
  * @param {(tag: string) => void} onTagClick - 标签点击回调
+ * @param {string} tagClassName - 标签额外样式类名
  */
-export default function MarkdownContent({ content, onTagClick }) {
+export default function MarkdownContent({ content, onTagClick, tagClassName = "" }) {
+  // 提取所有图片链接
+  const imgRegex = /!\[[^\]]*\]\(([^\)]+)\)/g;
+  const images = [];
+  let imgMatch;
+  while ((imgMatch = imgRegex.exec(content))) {
+    images.push(imgMatch[1]);
+  }
+  // 去除图片标记后的文本内容
+  const textContent = content.replace(imgRegex, "");
+
   return (
     <>
-      {content.split(/(#[\w\u4e00-\u9fa5]+(?:\/[\w\u4e00-\u9fa5]+)*|!\[[^\]]*\]\([^\)]+\))/g).map((part, i) => {
+      {/* 渲染文本和标签 */}
+      {textContent.split(/(#[\w\u4e00-\u9fa5]+(?:\/[\w\u4e00-\u9fa5]+)*)/g).map((part, i) => {
         if (/^#[\w\u4e00-\u9fa5]+(?:\/[\w\u4e00-\u9fa5]+)*$/.test(part)) {
           return (
             <button
               key={i}
-              className="text-blue-600 underline hover:text-blue-800"
+              className={`inline-block bg-blue-50 text-blue-700 rounded px-2 py-0.5 mr-2 mb-1 hover:bg-blue-100 transition-colors align-middle ${tagClassName}`}
+              style={{ border: 'none', cursor: 'pointer', fontSize: '1em' }}
               onClick={() => {
                 const subTags = part.slice(1).split("/");
                 subTags.forEach((t) => onTagClick && onTagClick(t));
@@ -23,12 +36,22 @@ export default function MarkdownContent({ content, onTagClick }) {
             </button>
           );
         }
-        const imgMatch = part.match(/^!\[[^\]]*\]\(([^\)]+)\)/);
-        if (imgMatch) {
-          return <img key={i} src={imgMatch[1]} alt="" className="my-2 max-w-full" />;
-        }
         return <span key={i}>{part}</span>;
       })}
+      {/* 渲染图片缩略图，横向排列 */}
+      {images.length > 0 && (
+        <div className="flex flex-row flex-wrap gap-2 mt-2">
+          {images.map((src, idx) => (
+            <img
+              key={src + idx}
+              src={src}
+              alt=""
+              className="object-cover rounded shadow max-h-28 max-w-[120px] border border-gray-200"
+              style={{ background: '#f8f8fa' }}
+            />
+          ))}
+        </div>
+      )}
     </>
   );
 }

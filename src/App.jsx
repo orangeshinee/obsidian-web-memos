@@ -5,6 +5,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import MarkdownContent, { extractTags, parseMdNotes } from "@/components/MarkdownContent";
 
+function NoteActions({ onEdit, onDelete }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="absolute top-2 right-2 z-10">
+      <button
+        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="操作菜单"
+      >
+        <span style={{ fontSize: 22, fontWeight: 700 }}>...</span>
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-2 w-28 bg-white rounded shadow-lg border border-gray-100 py-1 text-sm">
+          <button className="block w-full text-left px-4 py-2 hover:bg-gray-50" onClick={() => { setOpen(false); onEdit(); }}>编辑</button>
+          <button className="block w-full text-left px-4 py-2 text-red-500 hover:bg-red-50" onClick={() => { setOpen(false); onDelete(); }}>删除</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
@@ -49,6 +70,10 @@ export default function App() {
     }
   };
 
+  const handleDeleteNote = (index) => {
+    setNotes(notes.filter((_, i) => i !== index));
+  };
+
   const filteredNotes = activeTag
     ? notes.filter((n) => extractTags(n.content).includes(activeTag))
     : notes;
@@ -78,39 +103,40 @@ export default function App() {
         </div>
       )}
 
-      {filteredNotes.map((note, index) => (
-        <Card key={note.filename + index + note.createdAt} className="mt-4">
-          <CardContent className="p-4 space-y-2">
-            <div className="text-sm text-gray-500">
-              {format(note.createdAt, "yyyy-MM-dd HH:mm")}
-            </div>
-
-            {editingIndex === index ? (
-              <>
-                <Textarea
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full"
-                />
-                <Button onClick={() => handleSaveEdit(index)}>保存</Button>
-                <Button variant="ghost" onClick={() => setEditingIndex(null)}>取消</Button>
-              </>
-            ) : (
-              <>
+      {filteredNotes.map((note, index) => {
+        const cleanContent = note.content.replace(/\n+$/, "");
+        return (
+          <Card key={note.filename + index + note.createdAt} className="mt-4 relative">
+            <NoteActions
+              onEdit={() => {
+                setEditingIndex(index);
+                setEditContent(note.content);
+              }}
+              onDelete={() => handleDeleteNote(index)}
+            />
+            <CardContent className="p-4 space-y-2">
+              <div className="text-sm text-gray-500">
+                {format(note.createdAt, "yyyy-MM-dd HH:mm")}
+              </div>
+              {editingIndex === index ? (
+                <>
+                  <Textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="w-full"
+                  />
+                  <Button onClick={() => handleSaveEdit(index)}>保存</Button>
+                  <Button variant="ghost" onClick={() => setEditingIndex(null)}>取消</Button>
+                </>
+              ) : (
                 <div className="whitespace-pre-wrap font-sans">
-                  <MarkdownContent content={note.content} onTagClick={setActiveTag} />
+                  <MarkdownContent content={cleanContent} onTagClick={setActiveTag} tagClassName="align-middle" />
                 </div>
-                <Button variant="link" onClick={() => {
-                  setEditingIndex(index);
-                  setEditContent(note.content);
-                }}>
-                  编辑
-                </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
