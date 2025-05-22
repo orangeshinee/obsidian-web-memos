@@ -74,6 +74,8 @@ export default function App() {
   const [activeTag, setActiveTag] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editContent, setEditContent] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc"); // desc: 新到旧, asc: 旧到新
+  const [sortOpen, setSortOpen] = useState(false);
 
   const handleAddNote = () => {
     if (!newNote.trim()) return;
@@ -116,16 +118,50 @@ export default function App() {
     setNotes(notes.filter((_, i) => i !== index));
   };
 
+  // 排序后的 notes
+  const sortedNotes = [...notes].sort((a, b) => {
+    if (sortOrder === "desc") {
+      return b.createdAt - a.createdAt;
+    } else {
+      return a.createdAt - b.createdAt;
+    }
+  });
+
   const filteredNotes = activeTag
-    ? notes.filter((n) => extractTags(n.content).includes(activeTag))
-    : notes;
+    ? sortedNotes.filter((n) => extractTags(n.content).includes(activeTag))
+    : sortedNotes;
 
   return (
     <div className="p-4 max-w-xl mx-auto space-y-4">
       <h1 className="text-2xl font-bold">📝 笔记卡片</h1>
 
-      <div className="space-x-2">
-        <Button onClick={handleAddNote}>添加笔记</Button>
+      <div className="space-x-2 relative inline-block">
+        {/* 排序下拉菜单 */}
+        <div className="relative inline-block">
+          <button
+            className="flex items-center px-3 py-1.5 rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 min-w-[120px] font-bold text-lg"
+            onClick={() => setSortOpen((v) => !v)}
+          >
+            全部笔记
+            <svg className="ml-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          {sortOpen && (
+            <div className="absolute left-0 mt-2 w-full bg-white rounded shadow-lg border border-gray-100 py-1 z-20">
+              <button
+                className={`block w-full text-left px-4 py-2 ${sortOrder === 'desc' ? 'text-green-600 font-semibold' : ''}`}
+                onClick={() => { setSortOrder('desc'); setSortOpen(false); }}
+              >
+                创建时间，从新到旧 {sortOrder === 'desc' && <span className="float-right">✔</span>}
+              </button>
+              <button
+                className={`block w-full text-left px-4 py-2 ${sortOrder === 'asc' ? 'text-green-600 font-semibold' : ''}`}
+                onClick={() => { setSortOrder('asc'); setSortOpen(false); }}
+              >
+                创建时间，从旧到新 {sortOrder === 'asc' && <span className="float-right">✔</span>}
+              </button>
+            </div>
+          )}
+        </div>
         <Button variant="outline" onClick={handleLoadFolder}>读取本地文件夹</Button>
       </div>
 
